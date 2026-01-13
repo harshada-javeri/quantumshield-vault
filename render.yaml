@@ -1,0 +1,71 @@
+# Render Deployment Blueprint
+# Deploy QuantumShield Vault to Render.com
+
+name: QuantumShield Vault
+services:
+  - type: pserv
+    name: quantumshield-db
+    env: postgres
+    plan: standard
+    ipAddress: private
+    databaseName: quantumshield
+    user: quantumshield
+    region: oregon
+
+  - type: web
+    name: quantumshield-backend
+    env: python
+    plan: standard
+    buildCommand: |
+      cd backend
+      pip install -r requirements.txt
+    startCommand: cd backend && python main.py
+    healthCheckPath: /health
+    healthCheckInterval: 30
+    healthCheckTimeout: 10
+    region: oregon
+    envVars:
+      - key: DATABASE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: quantumshield-db
+          property: connectionString
+      - key: PORT
+        value: '8000'
+      - key: ENV
+        value: production
+    domains:
+      - quantumshield-api.onrender.com
+
+  - type: web
+    name: quantumshield-frontend
+    env: node
+    plan: standard
+    buildCommand: |
+      cd frontend
+      npm ci
+      npm run build
+    startCommand: cd frontend && npm run preview
+    staticSite: false
+    healthCheckPath: /index.html
+    region: oregon
+    envVars:
+      - key: VITE_API_URL
+        value: https://quantumshield-api.onrender.com
+    domains:
+      - quantumshield-vault.onrender.com
+    dependencies:
+      - quantumshield-backend
+
+envVars:
+  - key: POSTGRES_USER
+    value: quantumshield
+  - key: POSTGRES_DB
+    value: quantumshield
+  - key: POSTGRES_PASSWORD
+    generateValue: true
+  - key: MCP_API_KEY
+    generateValue: true
+  - key: JWT_SECRET
+    generateValue: true

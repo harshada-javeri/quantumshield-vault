@@ -1,0 +1,31 @@
+version: 1
+disable_existing_loggers: false
+
+formatters:
+  standard:
+    format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: standard
+    level: INFO
+    stream: ext://sys.stdout
+
+  file:
+    class: logging.handlers.RotatingFileHandler
+    formatter: standard
+    level: DEBUG
+    filename: logs/app.log
+    maxBytes: 10485760  # 10MB
+    backupCount: 10
+
+root:
+  level: DEBUG
+  handlers: [console, file]
+
+loggers:
+  sqlalchemy:
+    level: WARNING
+  uvicorn:
+    level: INFO

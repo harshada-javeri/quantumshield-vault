@@ -1,0 +1,450 @@
+openapi: 3.0.3
+info:
+  title: QuantumShield Vault API
+  version: 1.0.0
+  description: Post-quantum cryptographic wallet API protecting against quantum attacks
+  contact:
+    name: QuantumShield Team
+    url: https://quantumshield.local
+
+servers:
+  - url: http://localhost:8000
+    description: Development server
+  - url: https://api.quantumshield.app
+    description: Production server
+
+tags:
+  - name: Health
+    description: System health checks
+  - name: Users
+    description: User management
+  - name: Wallets
+    description: Wallet creation and management
+  - name: Migration
+    description: ECDSA to Dilithium key migration
+  - name: Attacks
+    description: Quantum attack simulation
+  - name: Dashboard
+    description: User dashboard and statistics
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      responses:
+        '200':
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+
+  /users:
+    post:
+      tags:
+        - Users
+      summary: Create new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 255
+                email:
+                  type: string
+                  format: email
+              required:
+                - username
+                - email
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid input
+
+  /users/{user_id}:
+    get:
+      tags:
+        - Users
+      summary: Get user by ID
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+
+  /wallet:
+    post:
+      tags:
+        - Wallets
+      summary: Create new ECDSA wallet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+              required:
+                - user_id
+                - name
+      responses:
+        '201':
+          description: Wallet created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+
+  /wallet/{wallet_id}:
+    get:
+      tags:
+        - Wallets
+      summary: Get wallet details
+      parameters:
+        - name: wallet_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Wallet found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+        '404':
+          description: Wallet not found
+
+  /user/{user_id}/wallets:
+    get:
+      tags:
+        - Wallets
+      summary: Get all user wallets
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of wallets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Wallet'
+
+  /wallet/{wallet_id}/crypto-audit:
+    get:
+      tags:
+        - Wallets
+      summary: Get cryptographic audit
+      parameters:
+        - name: wallet_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Crypto audit report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CryptoAudit'
+
+  /migrate/{wallet_id}:
+    post:
+      tags:
+        - Migration
+      summary: Migrate wallet to Dilithium
+      parameters:
+        - name: wallet_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Migration successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MigrationResponse'
+        '400':
+          description: Wallet already migrated
+        '404':
+          description: Wallet not found
+
+  /user/{user_id}/migrations:
+    get:
+      tags:
+        - Migration
+      summary: Get migration history
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Migration logs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MigrationLog'
+
+  /simulate-attack/{wallet_id}:
+    post:
+      tags:
+        - Attacks
+      summary: Simulate quantum attack
+      parameters:
+        - name: wallet_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Attack simulation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttackResult'
+
+  /user/{user_id}/dashboard:
+    get:
+      tags:
+        - Dashboard
+      summary: Get user dashboard
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+
+  /stats/migration:
+    get:
+      tags:
+        - Dashboard
+      summary: Get migration statistics
+      responses:
+        '200':
+          description: Migration stats
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /stats/attacks:
+    get:
+      tags:
+        - Dashboard
+      summary: Get attack simulation statistics
+      responses:
+        '200':
+          description: Attack stats
+          content:
+            application/json:
+              schema:
+                type: object
+
+components:
+  schemas:
+    HealthCheck:
+      type: object
+      properties:
+        status:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        database:
+          type: string
+        mcp_server:
+          type: string
+        version:
+          type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Wallet:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        name:
+          type: string
+        ecdsa_address:
+          type: string
+        ecdsa_public_key:
+          type: string
+        balance_qsv:
+          type: number
+        is_migrated:
+          type: boolean
+        dilithium_public_key:
+          type: string
+          nullable: true
+        migrated_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    MigrationLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        wallet_id:
+          type: integer
+        old_key_hash:
+          type: string
+        new_key_hash:
+          type: string
+        transferred_balance:
+          type: number
+        status:
+          type: string
+        agent_plan:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    CryptoAudit:
+      type: object
+      properties:
+        wallet_id:
+          type: integer
+        current_algorithm:
+          type: string
+        current_algorithm_status:
+          type: string
+        post_quantum_algorithm:
+          type: string
+        quantum_threat_status:
+          type: string
+        migration_recommendation:
+          type: string
+
+    MigrationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        wallet_id:
+          type: integer
+        new_keys:
+          type: object
+        old_balance_transferred:
+          type: number
+        migration_id:
+          type: integer
+
+    AttackResult:
+      type: object
+      properties:
+        wallet_id:
+          type: integer
+        attack_successful:
+          type: boolean
+        quantum_vulnerable:
+          type: boolean
+        signature_broken:
+          type: boolean
+        estimated_break_time_seconds:
+          type: number
+        message:
+          type: string
+        recommendation:
+          type: string
+
+    Dashboard:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        wallets:
+          type: array
+          items:
+            $ref: '#/components/schemas/Wallet'
+        migration_logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/MigrationLog'
+        total_balance_qsv:
+          type: number
+        migrated_count:
+          type: integer
+        vulnerable_count:
+          type: integer
